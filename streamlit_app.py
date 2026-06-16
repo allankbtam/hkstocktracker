@@ -652,173 +652,19 @@ elif menu == t('add_transaction'):
 
     # t('stock') code and company name inputs (outside the form)
     col1, col2 = st.columns(2)
-    with col1:
-        stock_code = st.text_input(
-            t('stock_code'),
-            placeholder="0700.HK",
-            key="stock_code_input",
-            on_change=fetch_company_name
-        )
-    with col2:
-        company_name = st.text_input(
-            t('company_name'),
-            placeholder="Tencent Holdings",
-            value=st.session_state.company_name
-        )
-
-    # Form for the rest of the fields
-    with st.form("transaction_form"):
-        col1, col2 = st.columns(2)
-        with col1:
-            transaction_date = st.date_input(t('transaction_date'), value=datetime.now())
-        with col2:
-            quantity = st.number_input(t('quantity'), min_value=1, value=100)
-            price_per_share = st.number_input(t('price_per_share'), min_value=0.01, value=100.0, step=0.01)
-            fees = st.number_input(t('fees'), min_value=0.0, value=0.0, step=0.01)
-
-        submitted = st.form_submit_button(t('add_transaction'), type="primary")
-
-        if submitted:
-            if stock_code and company_name:
-                try:
-                    tx_id = add_transaction(
-                        stock_code.upper().strip(),
-                        company_name.strip(),
-                        transaction_date.strftime("%Y-%m-%d"),
-                        int(quantity),
-                        float(price_per_share),
-                        float(fees)
-                    )
-                    st.success(t('transaction_added').format(tx_id))
-                    st.balloons()
-                    # Clear company name after successful add to avoid stale data
-                    st.session_state.company_name = ""
-                except Exception as e:
-                    st.error(t('error_adding_transaction').format(e))
-            else:
-                st.error(t('please_fill_fields'))
-elif menu == t('add_dividend'):
-    st.title("💰 " + t('add_dividend'))
-    
-    with st.form("dividend_form"):
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            stock_code = st.text_input(t('stock_code'), placeholder="0700.HK")
-            record_date = st.date_input(t('record_date'), value=datetime.now())
-            dividend_per_share = st.number_input(t('dividend_per_share'), min_value=0.0, value=1.0, step=0.01)
-        
-        with col2:
-            payment_date = st.date_input(t('payment_date'), value=None)
-            # Convert to string or None
-            payment_date_str = payment_date.strftime("%Y-%m-%d") if payment_date else None
-        
-        submitted = st.form_submit_button(t('add_dividend'), type="primary")
-        
-        if submitted:
-            if stock_code:
-                try:
-                    div_id = add_dividend(
-                        stock_code.upper().strip(),
-                        record_date.strftime("%Y-%m-%d"),
-                        float(dividend_per_share),
-                        payment_date_str
-                    )
-                    st.success(t('dividend_added').format(div_id))
-                    st.balloons()
-                except Exception as e:
-                    st.error(f"{t('error')} adding dividend: {e}")
-            else:
-                st.error(t('please_enter_stock_code'))
-
-elif menu == t('view_data'):
-    st.title("👀 " + t('view_data'))
-
-    tab1, tab2 = st.tabs([t('transactions'), t('dividends')])
-
-    with tab1:
-        st.subheader(t('all_transactions'))
-        transactions = get_transactions()
-        if transactions:
-            # Header
-            cols = st.columns([1, 1, 1, 1, 1, 1, 1, 1])
-            cols[0].write(t("date"))
-            cols[1].write(t("stock") + " Code")
-            cols[2].write(t("company"))
-            cols[3].write(t("quantity"))
-            cols[4].write(t("price"))
-            cols[5].write(t("fees"))
-            cols[6].write(t("created_at"))
-            cols[7].write(t("action"))
-            # Data rows
-            tx_list = [dict(tx) for tx in transactions]
-            for tx in tx_list:
-                cols = st.columns([1, 1, 1, 1, 1, 1, 1, 1])
-                cols[0].write(tx["transaction_date"])
-                cols[1].write(tx["stock_code"])
-                cols[2].write(tx["company_name"])
-                cols[3].write(tx["quantity"])
-                cols[4].write(f"{tx['price_per_share']:.2f}")
-                cols[5].write(f"{tx['fees']:.2f}")
-                cols[6].write(tx["created_at"])
-                if cols[7].button("🗑️", key=f"delete_tx_{tx['id']}", help="Delete this transaction"):
-                    if delete_transaction(tx["id"]):
-                        st.success(f"Transaction {tx['id']} deleted.")
-                        st.rerun()
-                    else:
-                        st.error(f"Failed to delete transaction {tx['id']}.")
-        else:
-            st.info(t('no_transactions_found'))
-
-    with tab2:
-        st.subheader(t('all_dividends'))
-        dividends = get_dividends()
-        if dividends:
-            # Header
-            cols = st.columns([1, 1, 1, 1, 1, 1])
-            cols[0].write(t("record_date"))
-            cols[1].write(t("stock") + " Code")
-            cols[2].write(t("dividend_per_share"))
-            cols[3].write(t("payment_date"))
-            cols[4].write(t("created_at"))
-            cols[5].write(t("action"))
-            # Data rows
-            div_list = [dict(d) for d in dividends]
-            for div in div_list:
-                cols = st.columns([1, 1, 1, 1, 1, 1])
-                cols[0].write(div["record_date"])
-                cols[1].write(div["stock_code"])
-                cols[2].write(f"{div['dividend_per_share']:.2f}")
-                cols[3].write(div["payment_date"] if div["payment_date"] else "")
-                cols[4].write(div["created_at"])
-                if cols[5].button("🗑️", key=f"delete_div_{div['id']}", help="Delete this dividend"):
-                    if delete_dividend(div["id"]):
-                        st.success(f"Dividend {div['id']} deleted.")
-                        st.rerun()
-                    else:
-                        st.error(f"Failed to delete dividend {div['id']}.")
-                else:
-                    st.info(t('no_dividends_found'))
-elif menu == t('settings'):
-    st.title("⚙️ " + t('settings'))
-    
-    st.subheader(t('database_operations'))
-    st.subheader(t('database_operations'))
-
-    col1, col2 = st.columns(2)
 
     with col1:
         if st.button(t('refresh_data'), type="secondary"):
             st.cache_data.clear()
             st.success("Data refreshed!")
-    
+
     with col2:
-        if st.button(t('clear_all_data'), type="secondary"):
-            if st.checkbox(t('understand_clear')):
-                reset_database()
-                st.success(t('all_data_cleared'))
-                st.rerun()
-    
+        understand = st.checkbox(t('understand_clear'))
+        if st.button(t('clear_all_data'), type="secondary", disabled=not understand):
+            reset_database()
+            st.success(t('all_data_cleared'))
+            st.rerun()
+
     st.markdown("---")
     st.subheader(t('about'))
     st.markdown(t("app_description"))
