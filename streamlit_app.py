@@ -16,7 +16,7 @@ def check_password():
         if st.button("Enter"):
             if _hash(pw) == st.secrets.get("app_password_hash", ""):
                 st.session_state["password_correct"] = True
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.error("❌ Incorrect password")
         return False
@@ -99,7 +99,7 @@ elif menu == "Add Transaction":
                     float(fees)
                 )
                 st.success("Transaction added!")
-                st.experimental_rerun()
+                st.rerun()
 
 elif menu == "Add Dividend":
     st.header("Add Dividend Record")
@@ -120,7 +120,7 @@ elif menu == "Add Dividend":
                     float(div_per_share)
                 )
                 st.success("Dividend record added!")
-                st.experimental_rerun()
+                st.rerun()
 
 elif menu == "Fetch Dividends":
     st.header("Fetch Dividends from Yahoo Finance")
@@ -141,4 +141,4 @@ elif menu == "Reset DB":
     if st.button("Yes, reset everything"):
         reset_database()
         st.success("Database reset.")
-        st.experimental_rerun()
+        st.rerun()
